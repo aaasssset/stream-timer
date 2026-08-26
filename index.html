@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title> 加班台計時器  </title>
+    <title>加班台計時器</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Press+Start+2P&display=swap');
 
@@ -113,7 +113,7 @@
             transform: translateX(-50%) scale(1);
         }
 
-        /* 右側：科技感控制框 */
+        /* 右側：科技感控制框（在 OBS 裡面會自動隱藏，自己用瀏覽器或手機開時會出現） */
         .control-card {
             background: rgba(15, 23, 42, 0.85);
             border: 3px solid #38bdf8;
@@ -203,9 +203,9 @@
             </div>
         </div>
 
-        <!-- 右側：控制框（進 OBS 後自動隱藏） -->
+        <!-- 右側：控制框 -->
         <div class="control-card" id="controlPanel">
-            <div class="control-header">⚙️ 全功能自訂與文字修改</div>
+            <div class="control-header">⚙️ 全功能自訂與遙控面板</div>
             
             <div class="control-row" style="margin-bottom: 6px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
                 <span>樣式:</span>
@@ -217,7 +217,7 @@
                     <option value="aurora">🌌 漂亮極光</option>
                     <option value="meme">🤡 搞笑迷因</option>
                 </select>
-                <button style="background: #0369a1; flex: 1;" onclick="copyTimerLink()">📋 複製 OBS 網址</button>
+                <button style="background: #0369a1; flex: 1;" onclick="copyTimerLink()">📋 複製網址</button>
             </div>
 
             <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">✏️ 自訂計時器文字</div>
@@ -306,11 +306,11 @@
     </div>
 
     <script>
+        // 自動判斷：如果是在 OBS 裡面讀取，自動把右側控制面板隱藏，畫面只留乾淨計時器給觀眾！
         if (window.obsstudio) {
             document.getElementById('controlPanel').style.display = 'none';
         }
 
-        // 防呆保護：確保 timeLeft 一定是有效的數字
         let savedTime = localStorage.getItem('streamTimerLeft');
         let timeLeft = (savedTime !== null && !isNaN(parseInt(savedTime))) ? parseInt(savedTime) : 7200;
 
@@ -645,6 +645,14 @@
                 floatingPlus.classList.remove('show');
             }, 4000); 
         }
+
+        // 監聽來自其他瀏覽器（或自己手機）的即時同步與加時訊號
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'streamTimerLeft') {
+                timeLeft = parseInt(e.newValue) || 0;
+                updateDisplay();
+            }
+        });
 
         window.addEventListener('onEventReceived', function (obj) {
             let event = obj.detail;
