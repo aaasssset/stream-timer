@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>= 加班台計時器 </title>
+    <title> 加班台計時器 </title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap');
 
@@ -175,7 +175,7 @@
     <div class="main-wrapper">
         <!-- 左側：計時器主框 -->
         <div class="timer-card">
-            <div id="popMsg" class="pop-msg">💙 系統已啟動！準備倒數</div>
+            <div id="popMsg" class="pop-msg">💙 系統已啟動！記憶功能運作中</div>
             <div class="timer-title">☁️ 藍天白雲・努力加班中 ☁️</div>
             
             <div class="timer-container">
@@ -216,7 +216,6 @@
                 <button class="btn-flex" style="background:#8b5cf6;" onclick="triggerEvent('e3Name', 'e3Sec', '大戶')">測試</button>
             </div>
 
-            <!-- 已經把預設值改成 2.9 秒囉！ -->
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內(1元加2.9秒)">
                 <input type="number" id="e4Sec" value="2.9" min="0.1" step="0.1">秒
@@ -226,7 +225,9 @@
     </div>
 
     <script>
-        let timeLeft = 7200; // 預設 2 小時
+        // 從瀏覽器記憶體讀取上次的時間，如果沒有才預設 7200 秒 (2小時)
+        let timeLeft = localStorage.getItem('streamTimerLeft') !== null ? parseInt(localStorage.getItem('streamTimerLeft')) : 7200;
+        
         let timerInterval = null;
         let isRunning = false;
 
@@ -238,12 +239,15 @@
         function updateDisplay() {
             let hours = Math.floor(timeLeft / 3600);
             let minutes = Math.floor((timeLeft % 3600) / 60);
-            let seconds = Math.floor(timeLeft % 60); // 確保顯示整數
+            let seconds = Math.floor(timeLeft % 60);
 
             timerDisplay.textContent = 
                 String(hours).padStart(2, '0') + ':' +
                 String(minutes).padStart(2, '0') + ':' +
                 String(seconds).padStart(2, '0');
+
+            // 每次更新畫面時，自動把剩餘時間存入瀏覽器記憶體
+            localStorage.setItem('streamTimerLeft', timeLeft);
         }
 
         function forceStart() {
@@ -255,13 +259,13 @@
                 showPopup("⏸️ 計時器已暫停", "");
             } else {
                 if (timerInterval) clearInterval(timerInterval);
-                // 修改這裡：就算時間歸零，引擎也不會關閉，隨時等待加時復活！
                 timerInterval = setInterval(() => {
                     if (timeLeft > 0) {
                         timeLeft--;
                         updateDisplay();
                     } else {
                         timerDisplay.textContent = "下班啦！";
+                        localStorage.setItem('streamTimerLeft', 0);
                     }
                 }, 1000);
                 isRunning = true;
@@ -281,10 +285,10 @@
 
         function triggerEvent(nameId, secId, username) {
             let eventName = document.getElementById(nameId).value || '事件';
-            let seconds = parseFloat(document.getElementById(secId).value) || 60; // 支援小數點如 2.9
+            let seconds = parseFloat(document.getElementById(secId).value) || 60;
             
             timeLeft += seconds;
-            updateDisplay(); // 瞬間更新畫面，抹除「下班啦」
+            updateDisplay();
             showPopup(`🌟 謝謝 【${username}】 達成【${eventName}】！`, `+${seconds}秒`);
         }
 
