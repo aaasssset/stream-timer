@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>藍色可愛風加班台計時器（自動復活版）</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap');
+
+        body {
+            background-color: transparent;
+            margin: 0;
+            padding: 20px;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 左側：計時器主框 */
+        .timer-card {
+            position: relative;
+            background: #f0f8ff;
+            border: 4px dashed #70d6ff;
+            border-radius: 30px;
+            padding: 30px 40px;
+            box-shadow: 0 10px 25px rgba(112, 214, 255, 0.3);
+            text-align: center;
+            width: 380px;
+        }
+
+        .timer-title {
+            font-size: 16px;
+            color: #3a86ff;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .timer-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #timer {
+            font-size: 56px;
+            font-weight: bold;
+            color: #0077b6;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #e0f2fe;
+        }
+
+        /* 旁邊浮現的 "+秒數" 特效 */
+        .floating-plus {
+            position: absolute;
+            right: -85px;
+            top: 5px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff477e;
+            text-shadow: 1px 1px 0px #fff;
+            opacity: 0;
+            transform: translateY(15px) scale(0.8);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .floating-plus.show {
+            opacity: 1;
+            transform: translateY(-5px) scale(1.15);
+        }
+
+        /* 上方提示文字 */
+        .pop-msg {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: #00b4d8;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0, 180, 216, 0.4);
+            white-space: nowrap;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pop-msg.show {
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* 右側：控制框 */
+        .control-card {
+            background: #ffffff;
+            border: 4px solid #bae6fd;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(186, 230, 253, 0.4);
+            width: 330px;
+            text-align: left;
+        }
+
+        .control-header {
+            font-size: 13px;
+            color: #0284c7;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-align: center;
+            border-bottom: 2px dashed #bae6fd;
+            padding-bottom: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            align-items: center;
+            font-size: 11px;
+            color: #555;
+        }
+
+        input {
+            width: 45px;
+            padding: 4px;
+            background: #f8fafc;
+            border: 2px solid #bae6fd;
+            border-radius: 8px;
+            text-align: center;
+            color: #0077b6;
+            font-weight: bold;
+            font-family: inherit;
+        }
+
+        .custom-name-input {
+            width: 110px;
+        }
+
+        button {
+            background: #38bdf8;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #0ea5e9;
+            transform: translateY(-1px);
+        }
+
+        .btn-flex {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <!-- 左側：計時器主框 -->
+        <div class="timer-card">
+            <div id="popMsg" class="pop-msg">💙 系統已啟動！準備倒數</div>
+            <div class="timer-title">☁️ 藍天白雲・努力加班中 ☁️</div>
+            
+            <div class="timer-container">
+                <div id="timer">02:00:00</div>
+                <div id="floatingPlus" class="floating-plus">+10秒</div>
+            </div>
+        </div>
+
+        <!-- 右側：控制框 -->
+        <div class="control-card">
+            <div class="control-header">⚙️ 功能與時間設定面板</div>
+            
+            <div class="control-row" style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                <span>初始時間:</span>
+                <input type="number" id="initH" value="2" min="0">時
+                <input type="number" id="initM" value="0" min="0" max="59">分
+                <button onclick="setInitialTime()">重設</button>
+                <button onclick="forceStart()" id="toggleBtn" style="background:#10b981;">強制開始</button>
+            </div>
+
+            <div style="font-size: 11px; color: #0284c7; font-weight: bold; margin-bottom: 6px;">📋 自訂加時事件表</div>
+
+            <div class="control-row">
+                <input type="text" class="custom-name-input" id="e1Name" value="💙 訂閱">
+                <input type="number" id="e1Sec" value="600" min="1">秒
+                <button class="btn-flex" style="background:#00b4d8;" onclick="triggerEvent('e1Name', 'e1Sec', '小美')">測試</button>
+            </div>
+
+            <div class="control-row">
+                <input type="text" class="custom-name-input" id="e2Name" value="🎁 抽獎/抽籤">
+                <input type="number" id="e2Sec" value="300" min="1">秒
+                <button class="btn-flex" style="background:#fbbf24; color:#000;" onclick="triggerEvent('e2Name', 'e2Sec', '阿華')">測試</button>
+            </div>
+
+            <div class="control-row">
+                <input type="text" class="custom-name-input" id="e3Name" value="⚓ 上艦/艦長">
+                <input type="number" id="e3Sec" value="1200" min="1">秒
+                <button class="btn-flex" style="background:#8b5cf6;" onclick="triggerEvent('e3Name', 'e3Sec', '大戶')">測試</button>
+            </div>
+
+            <!-- 已經把預設值改成 2.9 秒囉！ -->
+            <div class="control-row">
+                <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內(1元加2.9秒)">
+                <input type="number" id="e4Sec" value="2.9" min="0.1" step="0.1">秒
+                <button class="btn-flex" style="background:#ff477e;" onclick="triggerEvent('e4Name', 'e4Sec', '觀眾')">測試</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 7200; // 預設 2 小時
+        let timerInterval = null;
+        let isRunning = false;
+
+        const timerDisplay = document.getElementById('timer');
+        const popMsg = document.getElementById('popMsg');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const floatingPlus = document.getElementById('floatingPlus');
+
+        function updateDisplay() {
+            let hours = Math.floor(timeLeft / 3600);
+            let minutes = Math.floor((timeLeft % 3600) / 60);
+            let seconds = Math.floor(timeLeft % 60); // 確保顯示整數
+
+            timerDisplay.textContent = 
+                String(hours).padStart(2, '0') + ':' +
+                String(minutes).padStart(2, '0') + ':' +
+                String(seconds).padStart(2, '0');
+        }
+
+        function forceStart() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                toggleBtn.textContent = "點擊開始";
+                toggleBtn.style.background = "#38bdf8";
+                showPopup("⏸️ 計時器已暫停", "");
+            } else {
+                if (timerInterval) clearInterval(timerInterval);
+                // 修改這裡：就算時間歸零，引擎也不會關閉，隨時等待加時復活！
+                timerInterval = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateDisplay();
+                    } else {
+                        timerDisplay.textContent = "下班啦！";
+                    }
+                }, 1000);
+                isRunning = true;
+                toggleBtn.textContent = "暫停";
+                toggleBtn.style.background = "#ef4444";
+                showPopup("▶️ 計時器開始倒數囉！", "");
+            }
+        }
+
+        function setInitialTime() {
+            let h = parseInt(document.getElementById('initH').value) || 0;
+            let m = parseInt(document.getElementById('initM').value) || 0;
+            timeLeft = (h * 3600) + (m * 60);
+            updateDisplay();
+            showPopup(`⏱️ 時間已重設為 ${h}時${m}分`, "");
+        }
+
+        function triggerEvent(nameId, secId, username) {
+            let eventName = document.getElementById(nameId).value || '事件';
+            let seconds = parseFloat(document.getElementById(secId).value) || 60; // 支援小數點如 2.9
+            
+            timeLeft += seconds;
+            updateDisplay(); // 瞬間更新畫面，抹除「下班啦」
+            showPopup(`🌟 謝謝 【${username}】 達成【${eventName}】！`, `+${seconds}秒`);
+        }
+
+        let hideTimeout = null;
+        function showPopup(text, plusText) {
+            popMsg.textContent = text;
+            popMsg.classList.add('show');
+
+            if (plusText) {
+                floatingPlus.textContent = plusText;
+                floatingPlus.classList.add('show');
+            }
+
+            if (hideTimeout) clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                popMsg.classList.remove('show');
+                floatingPlus.classList.remove('show');
+            }, 4000); 
+        }
+
+        updateDisplay();
+        forceStart();
+    </script>
+</body>
+</html>
