@@ -188,6 +188,12 @@
         <div class="control-card">
             <div class="control-header">⚙️ 功能與時間設定面板</div>
             
+            <!-- 新增：一鍵複製連結按鈕列 -->
+            <div class="control-row" style="margin-bottom: 10px; background: #f0f9ff; padding: 6px; border-radius: 10px;">
+                <span style="font-weight: bold; color: #0369a1;">obs 連結:</span>
+                <button style="background: #0284c7; flex: 1;" onclick="copyTimerLink()">📋 複製 OBS 網址</button>
+            </div>
+
             <div class="control-row" style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                 <span>初始時間:</span>
                 <input type="number" id="initH" value="2" min="0">時
@@ -225,7 +231,6 @@
     </div>
 
     <script>
-        // 從瀏覽器記憶體讀取上次的時間，如果沒有才預設 7200 秒 (2小時)
         let timeLeft = localStorage.getItem('streamTimerLeft') !== null ? parseInt(localStorage.getItem('streamTimerLeft')) : 7200;
         
         let timerInterval = null;
@@ -246,7 +251,6 @@
                 String(minutes).padStart(2, '0') + ':' +
                 String(seconds).padStart(2, '0');
 
-            // 每次更新畫面時，自動把剩餘時間存入瀏覽器記憶體
             localStorage.setItem('streamTimerLeft', timeLeft);
         }
 
@@ -290,6 +294,16 @@
             timeLeft += seconds;
             updateDisplay();
             showPopup(`🌟 謝謝 【${username}】 達成【${eventName}】！`, `+${seconds}秒`);
+        }
+
+        // 新增：複製網址功能
+        function copyTimerLink() {
+            let currentUrl = window.location.href;
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                showPopup("🔗 已成功複製 OBS 網址！", "已複製");
+            }).catch(err => {
+                showPopup("❌ 複製失敗，請手動複製網址", "");
+            });
         }
 
         let hideTimeout = null;
