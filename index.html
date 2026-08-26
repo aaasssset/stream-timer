@@ -220,7 +220,6 @@
                 <button style="background: #0369a1; flex: 1;" onclick="copyTimerLink()">📋 複製 OBS 網址</button>
             </div>
 
-            <!-- 新增：自訂標題文字設定 -->
             <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">✏️ 自訂計時器文字</div>
             <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
                 <input type="text" id="customTitleInput" placeholder="輸入你想顯示的標題文字..." style="flex: 1; width: auto; font-size: 10px;">
@@ -311,7 +310,10 @@
             document.getElementById('controlPanel').style.display = 'none';
         }
 
-        let timeLeft = localStorage.getItem('streamTimerLeft') !== null ? parseInt(localStorage.getItem('streamTimerLeft')) : 7200;
+        // 防呆保護：確保 timeLeft 一定是有效的數字
+        let savedTime = localStorage.getItem('streamTimerLeft');
+        let timeLeft = (savedTime !== null && !isNaN(parseInt(savedTime))) ? parseInt(savedTime) : 7200;
+
         let timerInterval = null;
         let isRunning = false;
         let activePauseInterval = null;
@@ -437,11 +439,10 @@
             localStorage.removeItem('timerCustomBgPos');
             bgImgInput.value = '';
             bgPosSelect.value = 'center';
-            // 如果沒有自訂標題，就恢復樣式預設標題
             if (!localStorage.getItem('timerCustomTitle')) {
                 applyStyle(styleSelect.value);
             }
-            timerCard.style.background = ''; // 清除圖片背景
+            timerCard.style.background = '';
             showPopup("🗑️ 已清除自訂圖片", "已清除");
         }
 
@@ -454,7 +455,7 @@
         }
 
         function applyStyle(style) {
-            if (localStorage.getItem('timerCustomTitle')) return; // 有自訂文字就優先保留自訂文字
+            if (localStorage.getItem('timerCustomTitle')) return;
 
             if (style === 'cyber') {
                 timerCard.style.border = "3px solid #00ffff";
