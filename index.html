@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title> 全自訂實況加班台計時器 </title>
+    <title> 加班台計時器  </title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Press+Start+2P&display=swap');
 
@@ -15,13 +15,16 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
+            overflow: auto;
         }
 
         .main-wrapper {
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
+            gap: 50px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 40px;
         }
 
         /* 左側：計時器主框 */
@@ -35,7 +38,11 @@
             text-align: center;
             width: 380px;
             backdrop-filter: blur(10px);
-            transition: all 0.4s ease;
+            transition: transform 0.2s ease;
+            transform-origin: center;
+            background-size: cover !important;
+            background-repeat: no-repeat !important;
+            z-index: 2;
         }
 
         .timer-title {
@@ -61,7 +68,6 @@
             text-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
         }
 
-        /* 旁邊浮現的特效 */
         .floating-plus {
             position: absolute;
             right: -85px;
@@ -76,6 +82,7 @@
             transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             white-space: nowrap;
+            z-index: 100;
         }
 
         .floating-plus.show {
@@ -83,23 +90,23 @@
             transform: translateY(-8px) scale(1.2);
         }
 
-        /* 上方提示文字 */
         .pop-msg {
             position: absolute;
-            top: -65px;
+            bottom: -60px;
+            top: auto;
             left: 50%;
             transform: translateX(-50%) scale(0);
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
             padding: 8px 22px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 14px;
             box-shadow: 0 0 15px rgba(2, 132, 199, 0.6);
             border: 1px solid #38bdf8;
             white-space: nowrap;
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
-            z-index: 10;
+            z-index: 100;
         }
 
         .pop-msg.show {
@@ -118,6 +125,7 @@
             backdrop-filter: blur(10px);
             max-height: 90vh;
             overflow-y: auto;
+            z-index: 1;
         }
 
         .control-header {
@@ -197,7 +205,7 @@
 
         <!-- 右側：控制框（進 OBS 後自動隱藏） -->
         <div class="control-card" id="controlPanel">
-            <div class="control-header">⚙️ 全功能自訂與測試面板</div>
+            <div class="control-header">⚙️ 全功能自訂與文字修改</div>
             
             <div class="control-row" style="margin-bottom: 6px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
                 <span>樣式:</span>
@@ -212,7 +220,42 @@
                 <button style="background: #0369a1; flex: 1;" onclick="copyTimerLink()">📋 複製 OBS 網址</button>
             </div>
 
-            <!-- 時間設定 -->
+            <!-- 新增：自訂標題文字設定 -->
+            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">✏️ 自訂計時器文字</div>
+            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
+                <input type="text" id="customTitleInput" placeholder="輸入你想顯示的標題文字..." style="flex: 1; width: auto; font-size: 10px;">
+                <button style="background: #059669;" onclick="setCustomTitle()">套用文字</button>
+            </div>
+
+            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">📏 計時器尺寸縮放</div>
+            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
+                <span>大小:</span>
+                <input type="range" id="scaleRange" min="0.5" max="2.0" step="0.1" value="1.0" style="flex: 1; cursor: pointer;" oninput="changeScale(this.value)">
+                <span id="scaleValue" style="width: 35px; text-align: center; color: #38bdf8;">1.0倍</span>
+                <button style="background: #475569;" onclick="resetScale()">重置</button>
+            </div>
+
+            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">🖼️ 圖片背景與位置設定</div>
+            <div class="control-row" style="margin-bottom: 4px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
+                <input type="text" id="bgImgInput" placeholder="貼上圖片網址 (.jpg / .png)" style="flex: 1; width: auto; font-size: 10px;">
+                <button style="background: #db2777;" onclick="setCustomBg()">套用</button>
+                <button style="background: #475569;" onclick="clearCustomBg()">清除</button>
+            </div>
+            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
+                <span>位置:</span>
+                <select id="bgPosSelect" onchange="updateBgPosition()" style="flex: 1; width: auto;">
+                    <option value="center">置中 (Center)</option>
+                    <option value="top">靠上 (Top)</option>
+                    <option value="bottom">靠下 (Bottom)</option>
+                    <option value="left">靠左 (Left)</option>
+                    <option value="right">靠右 (Right)</option>
+                    <option value="top left">左上 (Top Left)</option>
+                    <option value="top right">右上 (Top Right)</option>
+                    <option value="bottom left">左下 (Bottom Left)</option>
+                    <option value="bottom right">右下 (Bottom Right)</option>
+                </select>
+            </div>
+
             <div class="control-row" style="margin-bottom: 8px; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 6px;">
                 <span>時間:</span>
                 <input type="number" id="initH" value="2" min="0">時
@@ -222,7 +265,6 @@
                 <button onclick="forceStart()" id="toggleBtn" style="background:#059669;">開始</button>
             </div>
 
-            <!-- 斗內暫停設定 -->
             <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">💎 斗內自動暫停設定</div>
             <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
                 <span>滿</span>
@@ -235,28 +277,24 @@
 
             <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">📋 各事件加時與名稱自訂</div>
 
-            <!-- 事件 1 -->
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e1Name" value="⚡ 訂閱">
                 <input type="number" id="e1Sec" value="600" min="1">秒
                 <button class="btn-flex" style="background:#0284c7;" onclick="triggerEvent('e1Name', 'e1Sec', '小美')">測試</button>
             </div>
 
-            <!-- 事件 2 -->
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e2Name" value="🎁 抽獎">
                 <input type="number" id="e2Sec" value="300" min="1">秒
                 <button class="btn-flex" style="background:#d97706; color:#fff;" onclick="triggerEvent('e2Name', 'e2Sec', '阿華')">測試</button>
             </div>
 
-            <!-- 事件 3 -->
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e3Name" value="⚓ 艦長">
                 <input type="number" id="e3Sec" value="1200" min="1">秒
                 <button class="btn-flex" style="background:#7c3aed;" onclick="triggerEvent('e3Name', 'e3Sec', '大戶')">測試</button>
             </div>
 
-            <!-- 事件 4 -->
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內換算">
                 <input type="number" id="e4Sec" value="2.9" min="0.1" step="0.1" style="width:34px;">秒/元
@@ -276,7 +314,7 @@
         let timeLeft = localStorage.getItem('streamTimerLeft') !== null ? parseInt(localStorage.getItem('streamTimerLeft')) : 7200;
         let timerInterval = null;
         let isRunning = false;
-        let activePauseInterval = null; // 獨立專用的暫停計時器
+        let activePauseInterval = null;
 
         const timerCard = document.getElementById('timerCard');
         const timerTitle = document.getElementById('timerTitle');
@@ -285,10 +323,36 @@
         const toggleBtn = document.getElementById('toggleBtn');
         const floatingPlus = document.getElementById('floatingPlus');
         const styleSelect = document.getElementById('styleSelect');
+        const bgImgInput = document.getElementById('bgImgInput');
+        const bgPosSelect = document.getElementById('bgPosSelect');
+        const scaleRange = document.getElementById('scaleRange');
+        const scaleValue = document.getElementById('scaleValue');
+        const customTitleInput = document.getElementById('customTitleInput');
 
         let savedStyle = localStorage.getItem('timerStyle') || 'cyber';
         styleSelect.value = savedStyle;
-        applyStyle(savedStyle);
+
+        let savedTitle = localStorage.getItem('timerCustomTitle') || '';
+        if (savedTitle) {
+            customTitleInput.value = savedTitle;
+            timerTitle.textContent = savedTitle;
+        } else {
+            applyStyle(savedStyle);
+        }
+
+        let savedScale = localStorage.getItem('timerScale') || '1.0';
+        scaleRange.value = savedScale;
+        scaleValue.textContent = savedScale + '倍';
+        timerCard.style.transform = `scale(${savedScale})`;
+
+        let savedBg = localStorage.getItem('timerCustomBg') || '';
+        let savedPos = localStorage.getItem('timerCustomBgPos') || 'center';
+        bgPosSelect.value = savedPos;
+
+        if (savedBg) {
+            bgImgInput.value = savedBg;
+            timerCard.style.background = `url('${savedBg}') ${savedPos} / cover`;
+        }
 
         function loadConfig() {
             if(localStorage.getItem('e1Name')) document.getElementById('e1Name').value = localStorage.getItem('e1Name');
@@ -323,15 +387,76 @@
             showPopup("💾 所有設定已完美儲存！", "已儲存");
         }
 
+        function setCustomTitle() {
+            let titleText = customTitleInput.value.trim();
+            if (titleText) {
+                localStorage.setItem('timerCustomTitle', titleText);
+                timerTitle.textContent = titleText;
+                showPopup("✏️ 自訂文字已套用！", "成功");
+            } else {
+                localStorage.removeItem('timerCustomTitle');
+                applyStyle(styleSelect.value);
+                showPopup("🗑️ 已恢復預設標題", "清除");
+            }
+        }
+
+        function changeScale(val) {
+            timerCard.style.transform = `scale(${val})`;
+            scaleValue.textContent = val + '倍';
+            localStorage.setItem('timerScale', val);
+        }
+
+        function resetScale() {
+            scaleRange.value = "1.0";
+            changeScale("1.0");
+            showPopup("📏 尺寸已重置為 1.0倍", "重置");
+        }
+
+        function setCustomBg() {
+            let url = bgImgInput.value.trim();
+            if (url) {
+                localStorage.setItem('timerCustomBg', url);
+                let pos = bgPosSelect.value;
+                timerCard.style.background = `url('${url}') ${pos} / cover`;
+                showPopup("🖼️ 背景圖片與位置已套用！", "成功");
+            }
+        }
+
+        function updateBgPosition() {
+            let pos = bgPosSelect.value;
+            localStorage.setItem('timerCustomBgPos', pos);
+            let url = localStorage.getItem('timerCustomBg');
+            if (url) {
+                timerCard.style.background = `url('${url}') ${pos} / cover`;
+                showPopup(`📍 圖片位置改為：${pos}`, "調整");
+            }
+        }
+
+        function clearCustomBg() {
+            localStorage.removeItem('timerCustomBg');
+            localStorage.removeItem('timerCustomBgPos');
+            bgImgInput.value = '';
+            bgPosSelect.value = 'center';
+            // 如果沒有自訂標題，就恢復樣式預設標題
+            if (!localStorage.getItem('timerCustomTitle')) {
+                applyStyle(styleSelect.value);
+            }
+            timerCard.style.background = ''; // 清除圖片背景
+            showPopup("🗑️ 已清除自訂圖片", "已清除");
+        }
+
         function changeStyle() {
             let style = styleSelect.value;
             localStorage.setItem('timerStyle', style);
-            applyStyle(style);
+            if (!localStorage.getItem('timerCustomTitle')) {
+                applyStyle(style);
+            }
         }
 
         function applyStyle(style) {
+            if (localStorage.getItem('timerCustomTitle')) return; // 有自訂文字就優先保留自訂文字
+
             if (style === 'cyber') {
-                timerCard.style.background = "linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9))";
                 timerCard.style.border = "3px solid #00ffff";
                 timerCard.style.borderRadius = "25px";
                 timerCard.style.boxShadow = "0 0 25px rgba(0, 255, 255, 0.4)";
@@ -340,7 +465,6 @@
                 timerDisplay.style.color = "#ffffff";
                 timerDisplay.style.textShadow = "0 0 15px #00ffff";
             } else if (style === 'cute') {
-                timerCard.style.background = "#fff0f5";
                 timerCard.style.border = "4px dashed #ffb6c1";
                 timerCard.style.borderRadius = "30px";
                 timerCard.style.boxShadow = "0 10px 25px rgba(255, 182, 193, 0.4)";
@@ -349,7 +473,6 @@
                 timerDisplay.style.color = "#ff1493";
                 timerDisplay.style.textShadow = "2px 2px 0px #ffe4e1";
             } else if (style === 'mc') {
-                timerCard.style.background = "rgba(86, 60, 40, 0.95)";
                 timerCard.style.border = "4px solid #3b2716";
                 timerCard.style.borderRadius = "0px";
                 timerCard.style.boxShadow = "inset 4px 4px 0px #888, inset -4px -4px 0px #222";
@@ -358,7 +481,6 @@
                 timerDisplay.style.color = "#ffff55";
                 timerDisplay.style.textShadow = "3px 3px 0px #3f3f3f";
             } else if (style === 'clean') {
-                timerCard.style.background = "rgba(255, 255, 255, 0.95)";
                 timerCard.style.border = "2px solid #e2e8f0";
                 timerCard.style.borderRadius = "16px";
                 timerCard.style.boxShadow = "0 10px 30px rgba(0, 0, 0, 0.1)";
@@ -367,7 +489,6 @@
                 timerDisplay.style.color = "#0f172a";
                 timerDisplay.style.textShadow = "none";
             } else if (style === 'aurora') {
-                timerCard.style.background = "linear-gradient(135deg, rgba(76, 29, 149, 0.9), rgba(147, 51, 234, 0.9))";
                 timerCard.style.border = "3px solid #c084fc";
                 timerCard.style.borderRadius = "25px";
                 timerCard.style.boxShadow = "0 0 30px rgba(192, 132, 252, 0.5)";
@@ -376,7 +497,6 @@
                 timerDisplay.style.color = "#ffffff";
                 timerDisplay.style.textShadow = "0 0 20px #c084fc";
             } else if (style === 'meme') {
-                timerCard.style.background = "rgba(220, 38, 38, 0.95)";
                 timerCard.style.border = "4px solid #facc15";
                 timerCard.style.borderRadius = "10px";
                 timerCard.style.boxShadow = "0 0 35px rgba(250, 204, 21, 0.6)";
@@ -480,29 +600,21 @@
             let pauseTotalSec = (pMin * 60) + pSec;
 
             if (amount >= reqAmount && pauseTotalSec > 0) {
-                // 停止主計時器
                 stopMainTimer();
-
                 showPopup(`☕ 感謝 ${username} 贊助 $${amount}！暫停 ${pMin}分${pSec}秒！`, `+${addedSeconds}s`);
 
-                // 清除舊的暫停排程
                 if (activePauseInterval) clearInterval(activePauseInterval);
 
                 let pauseCountdown = pauseTotalSec;
-                
-                // 啟動獨立的暫停倒數，時間到自動呼叫 startMainTimer()
                 activePauseInterval = setInterval(() => {
                     pauseCountdown--;
                     if (pauseCountdown <= 0) {
                         clearInterval(activePauseInterval);
                         activePauseInterval = null;
-                        
-                        // 自動恢復計時！
                         startMainTimer();
                         showPopup("▶️ 暫停結束，自動繼續加班！", "");
                     }
                 }, 1000);
-
             } else {
                 let dName = document.getElementById('e4Name').value || '抖內';
                 showPopup(`💎 感謝 【${username}】 ${dName} $${amount}！`, `+${addedSeconds}s`);
