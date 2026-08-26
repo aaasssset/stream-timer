@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>加班台計時器</title>
+    <title>全自訂實況加班台計時器 (終極完整版)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Press+Start+2P&display=swap');
 
@@ -27,7 +27,7 @@
             padding: 40px;
         }
 
-        /* 左側：計時器主框 */
+        /* 左側：計時器主框（點擊可直接手動加時） */
         .timer-card {
             position: relative;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
@@ -38,11 +38,17 @@
             text-align: center;
             width: 380px;
             backdrop-filter: blur(10px);
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, border-color 0.2s ease;
             transform-origin: center;
             background-size: cover !important;
             background-repeat: no-repeat !important;
+            cursor: pointer;
             z-index: 2;
+        }
+
+        .timer-card:hover {
+            border-color: #ff007f;
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.6);
         }
 
         .timer-title {
@@ -68,6 +74,7 @@
             text-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
         }
 
+        /* 加秒數浮動特效 */
         .floating-plus {
             position: absolute;
             right: -85px;
@@ -90,6 +97,7 @@
             transform: translateY(-8px) scale(1.2);
         }
 
+        /* 感謝彈跳訊息 */
         .pop-msg {
             position: absolute;
             bottom: -60px;
@@ -113,7 +121,7 @@
             transform: translateX(-50%) scale(1);
         }
 
-        /* 右側：控制面板（在 OBS 裡面自動隱藏！觀眾絕對看不到；用手機或瀏覽器開時會出現讓你手動加時） */
+        /* 右側：控制面板（在 OBS 內會自動隱藏！用電腦瀏覽器開時會出現讓你自訂） */
         .control-card {
             background: rgba(15, 23, 42, 0.9);
             border: 3px solid #38bdf8;
@@ -193,8 +201,8 @@
 
     <div class="main-wrapper">
         <!-- 左側：計時器主框 -->
-        <div class="timer-card" id="timerCard">
-            <div id="popMsg" class="pop-msg">⚡ 系統就緒・自動倒數中</div>
+        <div class="timer-card" id="timerCard" title="點擊可手動加時">
+            <div id="popMsg" class="pop-msg">⚡ 點擊計時器可手動加時</div>
             <div id="timerTitle" class="timer-title">⚡ 加班台 ⚡</div>
             
             <div class="timer-container">
@@ -203,9 +211,9 @@
             </div>
         </div>
 
-        <!-- 右側：控制面板（OBS 內會自動隱藏！手機或瀏覽器開會出現） -->
+        <!-- 右側：控制面板（OBS 內自動隱藏） -->
         <div class="control-card" id="controlPanel">
-            <div class="control-header">⚙️ 手動遙控與測試面板</div>
+            <div class="control-header">⚙️ 樣式與自訂控制面板</div>
             
             <div class="control-row" style="margin-bottom: 6px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
                 <span>樣式:</span>
@@ -270,17 +278,17 @@
                 <button style="background: #7c3aed;" onclick="saveAllConfig()">儲存</button>
             </div>
 
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">📋 手動加時與測試</div>
+            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">📋 事件測試</div>
             <div class="control-row">
                 <input type="text" class="custom-name-input" id="e1Name" value="⚡ 訂閱">
                 <input type="number" id="e1Sec" value="600" min="1">秒
-                <button class="btn-flex" style="background:#0284c7;" onclick="triggerEvent('e1Name', 'e1Sec', '手動測試')">手動加時</button>
+                <button class="btn-flex" style="background:#0284c7;" onclick="triggerEvent('e1Name', 'e1Sec', '小美')">測試訂閱</button>
             </div>
             <div class="control-row">
-                <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內">
+                <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內換算">
                 <input type="number" id="e4Sec" value="2.9" min="0.1" step="0.1" style="width:34px;">秒/元
                 <input type="number" id="testDonationAmt" value="100" min="1" style="width:38px;">元
-                <button style="background:#db2777;" onclick="testCustomDonation()">模擬斗內</button>
+                <button style="background:#db2777;" onclick="testCustomDonation()">測試斗內</button>
             </div>
             
             <button style="background: #059669; width: 100%; margin-top: 5px;" onclick="saveAllConfig()">💾 儲存所有設定</button>
@@ -288,7 +296,7 @@
     </div>
 
     <script>
-        // 自動判斷：如果在 OBS 裡面，自動隱藏右側控制面板（觀眾絕對看不到）
+        // 自動偵測：如果在 OBS 裡面，自動隱藏右側控制面板（觀眾絕對看不到）
         const isObs = Boolean(window.obsstudio);
         if (isObs) {
             document.getElementById('controlPanel').style.display = 'none';
@@ -415,7 +423,9 @@
                 toggleBtn.textContent = isRunning ? "暫停" : "開始";
                 toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
             }
-            showPopup(isRunning ? "▶️ 倒數計時中！" : "⏸️ 計時器已暫停", "");
+            let msg = isRunning ? "▶️ 倒數計時中！" : "⏸️ 計時器已暫停";
+            showPopup(msg, "");
+            localStorage.setItem('timerPopupEvent', JSON.stringify({ text: msg, plus: "", time: Date.now() }));
         }
 
         function setInitialTime() {
@@ -424,7 +434,9 @@
             let s = parseInt(document.getElementById('initS').value) || 0;
             timeLeft = (h * 3600) + (m * 60) + s;
             updateDisplay();
-            showPopup(`⏱️ 時間重設為 ${h}時${m}分${s}秒`, "");
+            let msg = `⏱️ 時間重設為 ${h}時${m}分${s}秒`;
+            showPopup(msg, "");
+            localStorage.setItem('timerPopupEvent', JSON.stringify({ text: msg, plus: "", time: Date.now() }));
         }
 
         function triggerEvent(nameId, secId, username) {
@@ -433,7 +445,7 @@
             
             timeLeft += val;
             updateDisplay();
-            let popText = `⚡ 感謝 【${username}】 手動加時！`;
+            let popText = `⚡ 感謝 【${username}】 達成【${eventName}】！`;
             let plusText = `+${val}s`;
             showPopup(popText, plusText);
             localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
@@ -487,6 +499,32 @@
             }
         }
 
+        // 點擊計時器卡片：以「幾時、幾分、幾秒」手動加時
+        timerCard.addEventListener('click', () => {
+            let hInput = prompt("【手動加時】\n請輸入要增加的小時數 (沒有請填 0)：", "0");
+            if (hInput === null) return;
+            let mInput = prompt("【手動加時】\n請輸入要增加的分鐘數 (沒有請填 0)：", "0");
+            if (mInput === null) return;
+            let sInput = prompt("【手動加時】\n請輸入要增加的秒數 (沒有請填 0)：", "0");
+            if (sInput === null) return;
+
+            let h = parseInt(hInput) || 0;
+            let m = parseInt(mInput) || 0;
+            let s = parseInt(sInput) || 0;
+
+            let totalAddSec = (h * 3600) + (m * 60) + s;
+
+            if (totalAddSec !== 0) {
+                timeLeft += totalAddSec;
+                updateDisplay();
+                let msg = `+${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${s > 0 ? s + 's' : ''}`.trim();
+                showPopup("✨ 手動調整時間", msg);
+                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: "✨ 手動調整時間", plus: msg, time: Date.now() }));
+            } else {
+                alert("沒有增加任何時間！");
+            }
+        });
+
         function setCustomTitle() {
             let titleText = customTitleInput.value.trim();
             if (titleText) {
@@ -520,6 +558,7 @@
                 let pos = bgPosSelect.value;
                 timerCard.style.background = `url('${url}') ${pos} / cover`;
                 showPopup("🖼️ 背景圖片已套用！", "成功");
+                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: "🖼️ 背景圖片已套用！", plus: "", time: Date.now() }));
             }
         }
 
@@ -570,7 +609,80 @@
                 scaleValue.textContent = s + '倍';
             }
             if(localStorage.getItem('timerCustomBgPos')) {
-                bgPosSelect.value = localStorage.getItem('timerCustomBgPos';) // wait, let's fix the syntax error here
+                bgPosSelect.value = localStorage.getItem('timerCustomBgPos');
+            }
         }
-        // Let's make sure syntax is clean and correct.
-}
+        if(!isObs) loadConfig();
+
+        function saveAllConfig() {
+            showPopup("💾 所有設定已儲存！", "已儲存");
+            localStorage.setItem('timerPopupEvent', JSON.stringify({ text: "💾 所有設定已儲存！", plus: "", time: Date.now() }));
+        }
+
+        let hideTimeout = null;
+        function showPopup(text, plusText) {
+            popMsg.textContent = text;
+            popMsg.classList.add('show');
+            if (plusText) {
+                floatingPlus.textContent = plusText;
+                floatingPlus.classList.add('show');
+            }
+            if (hideTimeout) clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                popMsg.classList.remove('show');
+                floatingPlus.classList.remove('show');
+            }, 4000); 
+        }
+
+        // 自動倒數核心
+        setInterval(() => {
+            isRunning = localStorage.getItem('timerIsRunning') !== 'false';
+            if (isRunning && timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            }
+        }, 1000);
+
+        // 串流事件自動感應 (Streamlabs / StreamElements)
+        window.addEventListener('onEventReceived', function (obj) {
+            let event = obj.detail;
+            if (!event) return;
+
+            if (event.listener === 'subscriber') {
+                let username = event.event.name;
+                let seconds = parseFloat(document.getElementById('e1Sec')?.value) || 600;
+                timeLeft += seconds;
+                updateDisplay();
+                showPopup(`💙 謝謝 【${username}】 訂閱！`, `+${seconds}s`);
+            }
+
+            if (event.listener === 'donation' || event.listener === 'superchat') {
+                let username = event.event.name;
+                let amount = event.event.amount;
+                handleDonation(username, amount);
+            }
+        });
+
+        // 跨分頁 / OBS 與控制面板即時同步
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'streamTimerLeft') {
+                let val = parseInt(e.newValue);
+                if (!isNaN(val) && val !== timeLeft) {
+                    timeLeft = val;
+                    updateDisplay();
+                }
+            }
+            if (e.key === 'timerStyle' || e.key === 'timerCustomTitle' || e.key === 'timerScale' || e.key === 'timerCustomBg' || e.key === 'timerCustomBgPos') {
+                applyAllVisuals();
+            }
+            if (e.key === 'timerPopupEvent') {
+                let data = JSON.parse(e.newValue);
+                showPopup(data.text, data.plus);
+            }
+        });
+
+        applyAllVisuals();
+        updateDisplay();
+    </script>
+</body>
+</html>
