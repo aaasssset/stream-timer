@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>加班台計時器</title>
+    <title>全自訂實況加班台計時器</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Press+Start+2P&display=swap');
 
@@ -113,7 +113,7 @@
             transform: translateX(-50%) scale(1);
         }
 
-        /* 右側：科技感控制框（在 OBS 裡面會自動隱藏，自己用瀏覽器或手機開時會出現） */
+        /* 右側：科技感控制框 */
         .control-card {
             background: rgba(15, 23, 42, 0.85);
             border: 3px solid #38bdf8;
@@ -194,7 +194,7 @@
     <div class="main-wrapper">
         <!-- 左側：計時器主框 -->
         <div class="timer-card" id="timerCard">
-            <div id="popMsg" class="pop-msg">⚡ 系統就緒・全自訂中</div>
+            <div id="popMsg" class="pop-msg">⚡ 系統就緒・自動倒數中</div>
             <div id="timerTitle" class="timer-title">⚡ 加班台 ⚡</div>
             
             <div class="timer-container">
@@ -261,7 +261,7 @@
                 <input type="number" id="initM" value="0" min="0" max="59">分
                 <input type="number" id="initS" value="0" min="0" max="59">秒
                 <button onclick="setInitialTime()">重設</button>
-                <button onclick="forceStart()" id="toggleBtn" style="background:#059669;">開始</button>
+                <button onclick="forceStart()" id="toggleBtn" style="background:#dc2626;">暫停</button>
             </div>
 
             <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">💎 斗內自動暫停設定</div>
@@ -306,17 +306,16 @@
     </div>
 
     <script>
-        // 自動判斷：如果是在 OBS 裡面讀取，自動把右側控制面板隱藏，畫面只留乾淨計時器給觀眾！
-        if (window.obsstudio) {
+        const isObs = Boolean(window.obsstudio);
+        if (isObs) {
             document.getElementById('controlPanel').style.display = 'none';
         }
 
         let savedTime = localStorage.getItem('streamTimerLeft');
         let timeLeft = (savedTime !== null && !isNaN(parseInt(savedTime))) ? parseInt(savedTime) : 7200;
-
-        let timerInterval = null;
-        let isRunning = false;
-        let activePauseInterval = null;
+        
+        // 預設直接是自動倒數 (isRunning = true)
+        let isRunning = localStorage.getItem('timerIsRunning') !== 'false';
 
         const timerCard = document.getElementById('timerCard');
         const timerTitle = document.getElementById('timerTitle');
@@ -331,131 +330,38 @@
         const scaleValue = document.getElementById('scaleValue');
         const customTitleInput = document.getElementById('customTitleInput');
 
-        let savedStyle = localStorage.getItem('timerStyle') || 'cyber';
-        styleSelect.value = savedStyle;
-
-        let savedTitle = localStorage.getItem('timerCustomTitle') || '';
-        if (savedTitle) {
-            customTitleInput.value = savedTitle;
-            timerTitle.textContent = savedTitle;
-        } else {
-            applyStyle(savedStyle);
+        if (toggleBtn) {
+            toggleBtn.textContent = isRunning ? "暫停" : "開始";
+            toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
         }
 
-        let savedScale = localStorage.getItem('timerScale') || '1.0';
-        scaleRange.value = savedScale;
-        scaleValue.textContent = savedScale + '倍';
-        timerCard.style.transform = `scale(${savedScale})`;
+        function applyAllVisuals() {
+            let style = localStorage.getItem('timerStyle') || 'cyber';
+            let customTitle = localStorage.getItem('timerCustomTitle') || '';
+            let scale = localStorage.getItem('timerScale') || '1.0';
+            let bgImg = localStorage.getItem('timerCustomBg') || '';
+            let bgPos = localStorage.getItem('timerCustomBgPos') || 'center';
 
-        let savedBg = localStorage.getItem('timerCustomBg') || '';
-        let savedPos = localStorage.getItem('timerCustomBgPos') || 'center';
-        bgPosSelect.value = savedPos;
+            timerCard.style.transform = `scale(${scale})`;
 
-        if (savedBg) {
-            bgImgInput.value = savedBg;
-            timerCard.style.background = `url('${savedBg}') ${savedPos} / cover`;
-        }
-
-        function loadConfig() {
-            if(localStorage.getItem('e1Name')) document.getElementById('e1Name').value = localStorage.getItem('e1Name');
-            if(localStorage.getItem('e1Sec')) document.getElementById('e1Sec').value = localStorage.getItem('e1Sec');
-            if(localStorage.getItem('e2Name')) document.getElementById('e2Name').value = localStorage.getItem('e2Name');
-            if(localStorage.getItem('e2Sec')) document.getElementById('e2Sec').value = localStorage.getItem('e2Sec');
-            if(localStorage.getItem('e3Name')) document.getElementById('e3Name').value = localStorage.getItem('e3Name');
-            if(localStorage.getItem('e3Sec')) document.getElementById('e3Sec').value = localStorage.getItem('e3Sec');
-            if(localStorage.getItem('e4Name')) document.getElementById('e4Name').value = localStorage.getItem('e4Name');
-            if(localStorage.getItem('e4Sec')) document.getElementById('e4Sec').value = localStorage.getItem('e4Sec');
-            
-            if(localStorage.getItem('pauseMinAmt')) document.getElementById('pauseMinAmt').value = localStorage.getItem('pauseMinAmt');
-            if(localStorage.getItem('pauseMin')) document.getElementById('pauseMin').value = localStorage.getItem('pauseMin');
-            if(localStorage.getItem('pauseSec')) document.getElementById('pauseSec').value = localStorage.getItem('pauseSec');
-        }
-        loadConfig();
-
-        function saveAllConfig() {
-            localStorage.setItem('e1Name', document.getElementById('e1Name').value);
-            localStorage.setItem('e1Sec', document.getElementById('e1Sec').value);
-            localStorage.setItem('e2Name', document.getElementById('e2Name').value);
-            localStorage.setItem('e2Sec', document.getElementById('e2Sec').value);
-            localStorage.setItem('e3Name', document.getElementById('e3Name').value);
-            localStorage.setItem('e3Sec', document.getElementById('e3Sec').value);
-            localStorage.setItem('e4Name', document.getElementById('e4Name').value);
-            localStorage.setItem('e4Sec', document.getElementById('e4Sec').value);
-
-            localStorage.setItem('pauseMinAmt', document.getElementById('pauseMinAmt').value);
-            localStorage.setItem('pauseMin', document.getElementById('pauseMin').value);
-            localStorage.setItem('pauseSec', document.getElementById('pauseSec').value);
-
-            showPopup("💾 所有設定已完美儲存！", "已儲存");
-        }
-
-        function setCustomTitle() {
-            let titleText = customTitleInput.value.trim();
-            if (titleText) {
-                localStorage.setItem('timerCustomTitle', titleText);
-                timerTitle.textContent = titleText;
-                showPopup("✏️ 自訂文字已套用！", "成功");
+            if (customTitle) {
+                timerTitle.textContent = customTitle;
+                if(!isObs) customTitleInput.value = customTitle;
             } else {
-                localStorage.removeItem('timerCustomTitle');
-                applyStyle(styleSelect.value);
-                showPopup("🗑️ 已恢復預設標題", "清除");
+                applyStyleVisual(style);
+            }
+
+            if (bgImg) {
+                timerCard.style.background = `url('${bgImg}') ${bgPos} / cover`;
+                if(!isObs) bgImgInput.value = bgImg;
+            } else {
+                timerCard.style.background = '';
+                applyStyleVisual(style);
             }
         }
 
-        function changeScale(val) {
-            timerCard.style.transform = `scale(${val})`;
-            scaleValue.textContent = val + '倍';
-            localStorage.setItem('timerScale', val);
-        }
-
-        function resetScale() {
-            scaleRange.value = "1.0";
-            changeScale("1.0");
-            showPopup("📏 尺寸已重置為 1.0倍", "重置");
-        }
-
-        function setCustomBg() {
-            let url = bgImgInput.value.trim();
-            if (url) {
-                localStorage.setItem('timerCustomBg', url);
-                let pos = bgPosSelect.value;
-                timerCard.style.background = `url('${url}') ${pos} / cover`;
-                showPopup("🖼️ 背景圖片與位置已套用！", "成功");
-            }
-        }
-
-        function updateBgPosition() {
-            let pos = bgPosSelect.value;
-            localStorage.setItem('timerCustomBgPos', pos);
-            let url = localStorage.getItem('timerCustomBg');
-            if (url) {
-                timerCard.style.background = `url('${url}') ${pos} / cover`;
-                showPopup(`📍 圖片位置改為：${pos}`, "調整");
-            }
-        }
-
-        function clearCustomBg() {
-            localStorage.removeItem('timerCustomBg');
-            localStorage.removeItem('timerCustomBgPos');
-            bgImgInput.value = '';
-            bgPosSelect.value = 'center';
-            if (!localStorage.getItem('timerCustomTitle')) {
-                applyStyle(styleSelect.value);
-            }
-            timerCard.style.background = '';
-            showPopup("🗑️ 已清除自訂圖片", "已清除");
-        }
-
-        function changeStyle() {
-            let style = styleSelect.value;
-            localStorage.setItem('timerStyle', style);
-            if (!localStorage.getItem('timerCustomTitle')) {
-                applyStyle(style);
-            }
-        }
-
-        function applyStyle(style) {
-            if (localStorage.getItem('timerCustomTitle')) return;
+        function applyStyleVisual(style) {
+            if (localStorage.getItem('timerCustomTitle') || localStorage.getItem('timerCustomBg')) return;
 
             if (style === 'cyber') {
                 timerCard.style.border = "3px solid #00ffff";
@@ -522,47 +428,13 @@
         }
 
         function forceStart() {
-            if (isRunning) {
-                stopMainTimer();
-                showPopup("⏸️ 計時器已暫停", "");
-            } else {
-                startMainTimer();
-                showPopup("▶️ 倒數計時中！", "");
+            isRunning = !isRunning;
+            localStorage.setItem('timerIsRunning', isRunning);
+            if (toggleBtn) {
+                toggleBtn.textContent = isRunning ? "暫停" : "開始";
+                toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
             }
-        }
-
-        function startMainTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            if (activePauseInterval) {
-                clearInterval(activePauseInterval);
-                activePauseInterval = null;
-            }
-            timerInterval = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    updateDisplay();
-                } else {
-                    timerDisplay.textContent = "下班啦！";
-                    localStorage.setItem('streamTimerLeft', 0);
-                }
-            }, 1000);
-            isRunning = true;
-            if(toggleBtn) {
-                toggleBtn.textContent = "暫停";
-                toggleBtn.style.background = "#dc2626";
-            }
-        }
-
-        function stopMainTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            isRunning = false;
-            if(toggleBtn) {
-                toggleBtn.textContent = "開始";
-                toggleBtn.style.background = "#059669";
-            }
+            showPopup(isRunning ? "▶️ 倒數計時中！" : "⏸️ 計時器已暫停", "");
         }
 
         function setInitialTime() {
@@ -580,7 +452,10 @@
             
             timeLeft += val;
             updateDisplay();
-            showPopup(`⚡ 感謝 【${username}】 達成【${eventName}】！`, `+${val}s`);
+            let popText = `⚡ 感謝 【${username}】 達成【${eventName}】！`;
+            let plusText = `+${val}s`;
+            showPopup(popText, plusText);
+            localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
         }
 
         function testCustomDonation() {
@@ -600,45 +475,151 @@
             let pSec = parseInt(document.getElementById('pauseSec').value) || 10;
             let pauseTotalSec = (pMin * 60) + pSec;
 
+            let popText = `💎 感謝 【${username}】 贊助 $${amount}！`;
+            let plusText = `+${addedSeconds}s`;
+
             if (amount >= reqAmount && pauseTotalSec > 0) {
-                stopMainTimer();
-                showPopup(`☕ 感謝 ${username} 贊助 $${amount}！暫停 ${pMin}分${pSec}秒！`, `+${addedSeconds}s`);
+                isRunning = false;
+                localStorage.setItem('timerIsRunning', 'false');
+                if (toggleBtn) {
+                    toggleBtn.textContent = "開始";
+                    toggleBtn.style.background = "#059669";
+                }
+                popText = `☕ 感謝 ${username} 贊助 $${amount}！暫停 ${pMin}分${pSec}秒！`;
+                showPopup(popText, plusText);
+                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
 
-                if (activePauseInterval) clearInterval(activePauseInterval);
-
-                let pauseCountdown = pauseTotalSec;
-                activePauseInterval = setInterval(() => {
-                    pauseCountdown--;
-                    if (pauseCountdown <= 0) {
-                        clearInterval(activePauseInterval);
-                        activePauseInterval = null;
-                        startMainTimer();
-                        showPopup("▶️ 暫停結束，自動繼續加班！", "");
+                setTimeout(() => {
+                    isRunning = true;
+                    localStorage.setItem('timerIsRunning', 'true');
+                    if (toggleBtn) {
+                        toggleBtn.textContent = "暫停";
+                        toggleBtn.style.background = "#dc2626";
                     }
-                }, 1000);
+                    let resumeText = "▶️ 暫停結束，自動繼續加班！";
+                    showPopup(resumeText, "");
+                    localStorage.setItem('timerPopupEvent', JSON.stringify({ text: resumeText, plus: "", time: Date.now() }));
+                }, pauseTotalSec * 1000);
             } else {
-                let dName = document.getElementById('e4Name').value || '抖內';
-                showPopup(`💎 感謝 【${username}】 ${dName} $${amount}！`, `+${addedSeconds}s`);
+                showPopup(popText, plusText);
+                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
             }
         }
 
+        function setCustomTitle() {
+            let titleText = customTitleInput.value.trim();
+            if (titleText) {
+                localStorage.setItem('timerCustomTitle', titleText);
+                timerTitle.textContent = titleText;
+                showPopup("✏️ 自訂文字已套用！", "成功");
+            } else {
+                localStorage.removeItem('timerCustomTitle');
+                applyAllVisuals();
+                showPopup("🗑️ 已恢復預設標題", "清除");
+            }
+        }
+
+        function changeScale(val) {
+            timerCard.style.transform = `scale(${val})`;
+            scaleValue.textContent = val + '倍';
+            localStorage.setItem('timerScale', val);
+        }
+
+        function resetScale() {
+            scaleRange.value = "1.0";
+            changeScale("1.0");
+            showPopup("📏 尺寸已重置為 1.0倍", "重置");
+        }
+
+        function setCustomBg() {
+            let url = bgImgInput.value.trim();
+            if (url) {
+                localStorage.setItem('timerCustomBg', url);
+                let pos = bgPosSelect.value;
+                timerCard.style.background = `url('${url}') ${pos} / cover`;
+                showPopup("🖼️ 背景圖片已套用！", "成功");
+            }
+        }
+
+        function updateBgPosition() {
+            let pos = bgPosSelect.value;
+            localStorage.setItem('timerCustomBgPos', pos);
+            let url = localStorage.getItem('timerCustomBg');
+            if (url) {
+                timerCard.style.background = `url('${url}') ${pos} / cover`;
+                showPopup(`📍 圖片位置改為：${pos}`, "調整");
+            }
+        }
+
+        function clearCustomBg() {
+            localStorage.removeItem('timerCustomBg');
+            localStorage.removeItem('timerCustomBgPos');
+            bgImgInput.value = '';
+            bgPosSelect.value = 'center';
+            applyAllVisuals();
+            showPopup("🗑️ 已清除自訂圖片", "已清除");
+        }
+
+        function changeStyle() {
+            let style = styleSelect.value;
+            localStorage.setItem('timerStyle', style);
+            applyAllVisuals();
+        }
+
         function copyTimerLink() {
-            let currentUrl = window.location.href;
-            navigator.clipboard.writeText(currentUrl).then(() => {
-                showPopup("🔗 OBS 網址已複製！", "已複製");
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showPopup("🔗 網址已複製！", "已複製");
             });
+        }
+
+        function loadConfig() {
+            if(localStorage.getItem('e1Name')) document.getElementById('e1Name').value = localStorage.getItem('e1Name');
+            if(localStorage.getItem('e1Sec')) document.getElementById('e1Sec').value = localStorage.getItem('e1Sec');
+            if(localStorage.getItem('e2Name')) document.getElementById('e2Name').value = localStorage.getItem('e2Name');
+            if(localStorage.getItem('e2Sec')) document.getElementById('e2Sec').value = localStorage.getItem('e2Sec');
+            if(localStorage.getItem('e3Name')) document.getElementById('e3Name').value = localStorage.getItem('e3Name');
+            if(localStorage.getItem('e3Sec')) document.getElementById('e3Sec').value = localStorage.getItem('e3Sec');
+            if(localStorage.getItem('e4Name')) document.getElementById('e4Name').value = localStorage.getItem('e4Name');
+            if(localStorage.getItem('e4Sec')) document.getElementById('e4Sec').value = localStorage.getItem('e4Sec');
+            
+            if(localStorage.getItem('pauseMinAmt')) document.getElementById('pauseMinAmt').value = localStorage.getItem('pauseMinAmt');
+            if(localStorage.getItem('pauseMin')) document.getElementById('pauseMin').value = localStorage.getItem('pauseMin');
+            if(localStorage.getItem('pauseSec')) document.getElementById('pauseSec').value = localStorage.getItem('pauseSec');
+            if(localStorage.getItem('timerScale')) {
+                let s = localStorage.getItem('timerScale');
+                scaleRange.value = s;
+                scaleValue.textContent = s + '倍';
+            }
+            if(localStorage.getItem('timerCustomBgPos')) {
+                bgPosSelect.value = localStorage.getItem('timerCustomBgPos');
+            }
+        }
+        if(!isObs) loadConfig();
+
+        function saveAllConfig() {
+            localStorage.setItem('e1Name', document.getElementById('e1Name').value);
+            localStorage.setItem('e1Sec', document.getElementById('e1Sec').value);
+            localStorage.setItem('e2Name', document.getElementById('e2Name').value);
+            localStorage.setItem('e2Sec', document.getElementById('e2Sec').value);
+            localStorage.setItem('e3Name', document.getElementById('e3Name').value);
+            localStorage.setItem('e3Sec', document.getElementById('e3Sec').value);
+            localStorage.setItem('e4Name', document.getElementById('e4Name').value);
+            localStorage.setItem('e4Sec', document.getElementById('e4Sec').value);
+
+            localStorage.setItem('pauseMinAmt', document.getElementById('pauseMinAmt').value);
+            localStorage.setItem('pauseMin', document.getElementById('pauseMin').value);
+            localStorage.setItem('pauseSec', document.getElementById('pauseSec').value);
+            showPopup("💾 所有設定已完美儲存！", "已儲存");
         }
 
         let hideTimeout = null;
         function showPopup(text, plusText) {
             popMsg.textContent = text;
             popMsg.classList.add('show');
-
             if (plusText) {
                 floatingPlus.textContent = plusText;
                 floatingPlus.classList.add('show');
             }
-
             if (hideTimeout) clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => {
                 popMsg.classList.remove('show');
@@ -646,14 +627,41 @@
             }, 4000); 
         }
 
-        // 監聽來自其他瀏覽器（或自己手機）的即時同步與加時訊號
+        // 每秒背景倒數核心
+        setInterval(() => {
+            isRunning = localStorage.getItem('timerIsRunning') !== 'false';
+            if (isRunning && timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            }
+        }, 1000);
+
+        // 跨分頁 / OBS 與控制面板同步監聽
         window.addEventListener('storage', (e) => {
             if (e.key === 'streamTimerLeft') {
-                timeLeft = parseInt(e.newValue) || 0;
-                updateDisplay();
+                let val = parseInt(e.newValue);
+                if (!isNaN(val) && val !== timeLeft) {
+                    timeLeft = val;
+                    updateDisplay();
+                }
+            }
+            if (e.key === 'timerIsRunning') {
+                isRunning = e.newValue === 'true';
+                if (toggleBtn) {
+                    toggleBtn.textContent = isRunning ? "暫停" : "開始";
+                    toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
+                }
+            }
+            if (e.key === 'timerStyle' || e.key === 'timerCustomTitle' || e.key === 'timerScale' || e.key === 'timerCustomBg' || e.key === 'timerCustomBgPos') {
+                applyAllVisuals();
+            }
+            if (e.key === 'timerPopupEvent') {
+                let data = JSON.parse(e.newValue);
+                showPopup(data.text, data.plus);
             }
         });
 
+        // 串流事件串接
         window.addEventListener('onEventReceived', function (obj) {
             let event = obj.detail;
             if (!event) return;
@@ -664,7 +672,10 @@
                 let evName = document.getElementById('e1Name').value || '訂閱';
                 timeLeft += seconds;
                 updateDisplay();
-                showPopup(`💙 謝謝 【${username}】 達成【${evName}】！`, `+${seconds}s`);
+                let popText = `💙 謝謝 【${username}】 達成【${evName}】！`;
+                let plusText = `+${seconds}s`;
+                showPopup(popText, plusText);
+                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
             }
 
             if (event.listener === 'donation' || event.listener === 'superchat') {
@@ -674,8 +685,8 @@
             }
         });
 
+        applyAllVisuals();
         updateDisplay();
-        startMainTimer();
     </script>
 </body>
 </html>
