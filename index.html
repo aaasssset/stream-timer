@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>全自訂實況加班台計時器</title>
+    <title>OBS 計時器顯示端</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Press+Start+2P&display=swap');
 
@@ -15,19 +15,9 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: auto;
+            overflow: hidden;
         }
 
-        .main-wrapper {
-            display: flex;
-            gap: 50px;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            padding: 40px;
-        }
-
-        /* 左側：計時器主框 */
         .timer-card {
             position: relative;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
@@ -42,7 +32,6 @@
             transform-origin: center;
             background-size: cover !important;
             background-repeat: no-repeat !important;
-            z-index: 2;
         }
 
         .timer-title {
@@ -93,7 +82,6 @@
         .pop-msg {
             position: absolute;
             bottom: -60px;
-            top: auto;
             left: 50%;
             transform: translateX(-50%) scale(0);
             background: linear-gradient(135deg, #0284c7, #0369a1);
@@ -112,228 +100,30 @@
         .pop-msg.show {
             transform: translateX(-50%) scale(1);
         }
-
-        /* 右側：科技感控制框 */
-        .control-card {
-            background: rgba(15, 23, 42, 0.85);
-            border: 3px solid #38bdf8;
-            border-radius: 25px;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
-            width: 390px;
-            text-align: left;
-            backdrop-filter: blur(10px);
-            max-height: 90vh;
-            overflow-y: auto;
-            z-index: 1;
-        }
-
-        .control-header {
-            font-size: 13px;
-            color: #38bdf8;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-            border-bottom: 2px dashed rgba(56, 189, 248, 0.4);
-            padding-bottom: 6px;
-            letter-spacing: 1px;
-        }
-
-        .control-row {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 6px;
-            align-items: center;
-            font-size: 11px;
-            color: #cbd5e1;
-        }
-
-        input, select {
-            padding: 4px;
-            background: rgba(30, 41, 59, 0.9);
-            border: 2px solid #0284c7;
-            border-radius: 8px;
-            color: #38bdf8;
-            font-weight: bold;
-            font-family: inherit;
-        }
-
-        input[type="number"] { width: 40px; text-align: center; }
-        .custom-name-input { width: 85px; }
-        select { width: 100px; }
-
-        button {
-            background: #0284c7;
-            color: white;
-            border: none;
-            padding: 5px 7px;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
-        }
-
-        button:hover {
-            background: #38bdf8;
-            color: #0f172a;
-            transform: translateY(-1px);
-        }
-
-        .btn-flex {
-            display: flex;
-            gap: 4px;
-            flex: 1;
-        }
     </style>
 </head>
 <body>
 
-    <div class="main-wrapper">
-        <!-- 左側：計時器主框 -->
-        <div class="timer-card" id="timerCard">
-            <div id="popMsg" class="pop-msg">⚡ 系統就緒・自動倒數中</div>
-            <div id="timerTitle" class="timer-title">⚡ 加班台 ⚡</div>
-            
-            <div class="timer-container">
-                <div id="timer">02:00:00</div>
-                <div id="floatingPlus" class="floating-plus">+10s</div>
-            </div>
-        </div>
-
-        <!-- 右側：控制框 -->
-        <div class="control-card" id="controlPanel">
-            <div class="control-header">⚙️ 全功能自訂與遙控面板</div>
-            
-            <div class="control-row" style="margin-bottom: 6px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <span>樣式:</span>
-                <select id="styleSelect" onchange="changeStyle()">
-                    <option value="cyber">⚡ 炫酷賽博</option>
-                    <option value="cute">☁️ 可愛萌系</option>
-                    <option value="mc">🟫 MC 像素</option>
-                    <option value="clean">💎 好看簡約</option>
-                    <option value="aurora">🌌 漂亮極光</option>
-                    <option value="meme">🤡 搞笑迷因</option>
-                </select>
-                <button style="background: #0369a1; flex: 1;" onclick="copyTimerLink()">📋 複製網址</button>
-            </div>
-
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">✏️ 自訂計時器文字</div>
-            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <input type="text" id="customTitleInput" placeholder="輸入你想顯示的標題文字..." style="flex: 1; width: auto; font-size: 10px;">
-                <button style="background: #059669;" onclick="setCustomTitle()">套用文字</button>
-            </div>
-
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">📏 計時器尺寸縮放</div>
-            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <span>大小:</span>
-                <input type="range" id="scaleRange" min="0.5" max="2.0" step="0.1" value="1.0" style="flex: 1; cursor: pointer;" oninput="changeScale(this.value)">
-                <span id="scaleValue" style="width: 35px; text-align: center; color: #38bdf8;">1.0倍</span>
-                <button style="background: #475569;" onclick="resetScale()">重置</button>
-            </div>
-
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">🖼️ 圖片背景與位置設定</div>
-            <div class="control-row" style="margin-bottom: 4px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <input type="text" id="bgImgInput" placeholder="貼上圖片網址 (.jpg / .png)" style="flex: 1; width: auto; font-size: 10px;">
-                <button style="background: #db2777;" onclick="setCustomBg()">套用</button>
-                <button style="background: #475569;" onclick="clearCustomBg()">清除</button>
-            </div>
-            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <span>位置:</span>
-                <select id="bgPosSelect" onchange="updateBgPosition()" style="flex: 1; width: auto;">
-                    <option value="center">置中 (Center)</option>
-                    <option value="top">靠上 (Top)</option>
-                    <option value="bottom">靠下 (Bottom)</option>
-                    <option value="left">靠左 (Left)</option>
-                    <option value="right">靠右 (Right)</option>
-                    <option value="top left">左上 (Top Left)</option>
-                    <option value="top right">右上 (Top Right)</option>
-                    <option value="bottom left">左下 (Bottom Left)</option>
-                    <option value="bottom right">右下 (Bottom Right)</option>
-                </select>
-            </div>
-
-            <div class="control-row" style="margin-bottom: 8px; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 6px;">
-                <span>時間:</span>
-                <input type="number" id="initH" value="2" min="0">時
-                <input type="number" id="initM" value="0" min="0" max="59">分
-                <input type="number" id="initS" value="0" min="0" max="59">秒
-                <button onclick="setInitialTime()">重設</button>
-                <button onclick="forceStart()" id="toggleBtn" style="background:#dc2626;">暫停</button>
-            </div>
-
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 2px;">💎 斗內自動暫停設定</div>
-            <div class="control-row" style="margin-bottom: 8px; background: rgba(30, 41, 59, 0.6); padding: 5px; border-radius: 8px;">
-                <span>滿</span>
-                <input type="number" id="pauseMinAmt" value="100" min="1">元
-                <span>暫停</span>
-                <input type="number" id="pauseMin" value="0" min="0">分
-                <input type="number" id="pauseSec" value="10" min="0" max="59">秒
-                <button style="background: #7c3aed;" onclick="saveAllConfig()">儲存設定</button>
-            </div>
-
-            <div style="font-size: 10px; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">📋 各事件加時與名稱自訂</div>
-
-            <div class="control-row">
-                <input type="text" class="custom-name-input" id="e1Name" value="⚡ 訂閱">
-                <input type="number" id="e1Sec" value="600" min="1">秒
-                <button class="btn-flex" style="background:#0284c7;" onclick="triggerEvent('e1Name', 'e1Sec', '小美')">測試</button>
-            </div>
-
-            <div class="control-row">
-                <input type="text" class="custom-name-input" id="e2Name" value="🎁 抽獎">
-                <input type="number" id="e2Sec" value="300" min="1">秒
-                <button class="btn-flex" style="background:#d97706; color:#fff;" onclick="triggerEvent('e2Name', 'e2Sec', '阿華')">測試</button>
-            </div>
-
-            <div class="control-row">
-                <input type="text" class="custom-name-input" id="e3Name" value="⚓ 艦長">
-                <input type="number" id="e3Sec" value="1200" min="1">秒
-                <button class="btn-flex" style="background:#7c3aed;" onclick="triggerEvent('e3Name', 'e3Sec', '大戶')">測試</button>
-            </div>
-
-            <div class="control-row">
-                <input type="text" class="custom-name-input" id="e4Name" value="💎 抖內換算">
-                <input type="number" id="e4Sec" value="2.9" min="0.1" step="0.1" style="width:34px;">秒/元
-                <input type="number" id="testDonationAmt" value="100" min="1" style="width:38px;">元
-                <button style="background:#db2777;" onclick="testCustomDonation()">測試斗內</button>
-            </div>
-            
-            <button style="background: #059669; width: 100%; margin-top: 5px;" onclick="saveAllConfig()">💾 儲存所有自訂內容</button>
+    <div class="timer-card" id="timerCard">
+        <div id="popMsg" class="pop-msg">⚡ 系統就緒・自動倒數中</div>
+        <div id="timerTitle" class="timer-title">⚡ 加班台 ⚡</div>
+        
+        <div class="timer-container">
+            <div id="timer">02:00:00</div>
+            <div id="floatingPlus" class="floating-plus">+10s</div>
         </div>
     </div>
 
     <script>
-        const isObs = Boolean(window.obsstudio);
-        if (isObs) {
-            document.getElementById('controlPanel').style.display = 'none';
-        }
-
         let savedTime = localStorage.getItem('streamTimerLeft');
         let timeLeft = (savedTime !== null && !isNaN(parseInt(savedTime))) ? parseInt(savedTime) : 7200;
-        
-        // 預設直接是自動倒數 (isRunning = true)
         let isRunning = localStorage.getItem('timerIsRunning') !== 'false';
 
         const timerCard = document.getElementById('timerCard');
         const timerTitle = document.getElementById('timerTitle');
         const timerDisplay = document.getElementById('timer');
         const popMsg = document.getElementById('popMsg');
-        const toggleBtn = document.getElementById('toggleBtn');
         const floatingPlus = document.getElementById('floatingPlus');
-        const styleSelect = document.getElementById('styleSelect');
-        const bgImgInput = document.getElementById('bgImgInput');
-        const bgPosSelect = document.getElementById('bgPosSelect');
-        const scaleRange = document.getElementById('scaleRange');
-        const scaleValue = document.getElementById('scaleValue');
-        const customTitleInput = document.getElementById('customTitleInput');
-
-        if (toggleBtn) {
-            toggleBtn.textContent = isRunning ? "暫停" : "開始";
-            toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
-        }
 
         function applyAllVisuals() {
             let style = localStorage.getItem('timerStyle') || 'cyber';
@@ -346,14 +136,12 @@
 
             if (customTitle) {
                 timerTitle.textContent = customTitle;
-                if(!isObs) customTitleInput.value = customTitle;
             } else {
                 applyStyleVisual(style);
             }
 
             if (bgImg) {
                 timerCard.style.background = `url('${bgImg}') ${bgPos} / cover`;
-                if(!isObs) bgImgInput.value = bgImg;
             } else {
                 timerCard.style.background = '';
                 applyStyleVisual(style);
@@ -427,191 +215,6 @@
             localStorage.setItem('streamTimerLeft', timeLeft);
         }
 
-        function forceStart() {
-            isRunning = !isRunning;
-            localStorage.setItem('timerIsRunning', isRunning);
-            if (toggleBtn) {
-                toggleBtn.textContent = isRunning ? "暫停" : "開始";
-                toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
-            }
-            showPopup(isRunning ? "▶️ 倒數計時中！" : "⏸️ 計時器已暫停", "");
-        }
-
-        function setInitialTime() {
-            let h = parseInt(document.getElementById('initH').value) || 0;
-            let m = parseInt(document.getElementById('initM').value) || 0;
-            let s = parseInt(document.getElementById('initS').value) || 0;
-            timeLeft = (h * 3600) + (m * 60) + s;
-            updateDisplay();
-            showPopup(`⏱️ 時間重設為 ${h}時${m}分${s}秒`, "");
-        }
-
-        function triggerEvent(nameId, secId, username) {
-            let eventName = document.getElementById(nameId).value || '事件';
-            let val = parseFloat(document.getElementById(secId).value) || 60;
-            
-            timeLeft += val;
-            updateDisplay();
-            let popText = `⚡ 感謝 【${username}】 達成【${eventName}】！`;
-            let plusText = `+${val}s`;
-            showPopup(popText, plusText);
-            localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
-        }
-
-        function testCustomDonation() {
-            let amount = parseFloat(document.getElementById('testDonationAmt').value) || 100;
-            handleDonation('測試觀眾', amount);
-        }
-
-        function handleDonation(username, amount) {
-            let rate = parseFloat(document.getElementById('e4Sec').value) || 2.9;
-            let addedSeconds = Math.round(amount * rate);
-            
-            timeLeft += addedSeconds;
-            updateDisplay();
-
-            let reqAmount = parseFloat(document.getElementById('pauseMinAmt').value) || 100;
-            let pMin = parseInt(document.getElementById('pauseMin').value) || 0;
-            let pSec = parseInt(document.getElementById('pauseSec').value) || 10;
-            let pauseTotalSec = (pMin * 60) + pSec;
-
-            let popText = `💎 感謝 【${username}】 贊助 $${amount}！`;
-            let plusText = `+${addedSeconds}s`;
-
-            if (amount >= reqAmount && pauseTotalSec > 0) {
-                isRunning = false;
-                localStorage.setItem('timerIsRunning', 'false');
-                if (toggleBtn) {
-                    toggleBtn.textContent = "開始";
-                    toggleBtn.style.background = "#059669";
-                }
-                popText = `☕ 感謝 ${username} 贊助 $${amount}！暫停 ${pMin}分${pSec}秒！`;
-                showPopup(popText, plusText);
-                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
-
-                setTimeout(() => {
-                    isRunning = true;
-                    localStorage.setItem('timerIsRunning', 'true');
-                    if (toggleBtn) {
-                        toggleBtn.textContent = "暫停";
-                        toggleBtn.style.background = "#dc2626";
-                    }
-                    let resumeText = "▶️ 暫停結束，自動繼續加班！";
-                    showPopup(resumeText, "");
-                    localStorage.setItem('timerPopupEvent', JSON.stringify({ text: resumeText, plus: "", time: Date.now() }));
-                }, pauseTotalSec * 1000);
-            } else {
-                showPopup(popText, plusText);
-                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
-            }
-        }
-
-        function setCustomTitle() {
-            let titleText = customTitleInput.value.trim();
-            if (titleText) {
-                localStorage.setItem('timerCustomTitle', titleText);
-                timerTitle.textContent = titleText;
-                showPopup("✏️ 自訂文字已套用！", "成功");
-            } else {
-                localStorage.removeItem('timerCustomTitle');
-                applyAllVisuals();
-                showPopup("🗑️ 已恢復預設標題", "清除");
-            }
-        }
-
-        function changeScale(val) {
-            timerCard.style.transform = `scale(${val})`;
-            scaleValue.textContent = val + '倍';
-            localStorage.setItem('timerScale', val);
-        }
-
-        function resetScale() {
-            scaleRange.value = "1.0";
-            changeScale("1.0");
-            showPopup("📏 尺寸已重置為 1.0倍", "重置");
-        }
-
-        function setCustomBg() {
-            let url = bgImgInput.value.trim();
-            if (url) {
-                localStorage.setItem('timerCustomBg', url);
-                let pos = bgPosSelect.value;
-                timerCard.style.background = `url('${url}') ${pos} / cover`;
-                showPopup("🖼️ 背景圖片已套用！", "成功");
-            }
-        }
-
-        function updateBgPosition() {
-            let pos = bgPosSelect.value;
-            localStorage.setItem('timerCustomBgPos', pos);
-            let url = localStorage.getItem('timerCustomBg');
-            if (url) {
-                timerCard.style.background = `url('${url}') ${pos} / cover`;
-                showPopup(`📍 圖片位置改為：${pos}`, "調整");
-            }
-        }
-
-        function clearCustomBg() {
-            localStorage.removeItem('timerCustomBg');
-            localStorage.removeItem('timerCustomBgPos');
-            bgImgInput.value = '';
-            bgPosSelect.value = 'center';
-            applyAllVisuals();
-            showPopup("🗑️ 已清除自訂圖片", "已清除");
-        }
-
-        function changeStyle() {
-            let style = styleSelect.value;
-            localStorage.setItem('timerStyle', style);
-            applyAllVisuals();
-        }
-
-        function copyTimerLink() {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                showPopup("🔗 網址已複製！", "已複製");
-            });
-        }
-
-        function loadConfig() {
-            if(localStorage.getItem('e1Name')) document.getElementById('e1Name').value = localStorage.getItem('e1Name');
-            if(localStorage.getItem('e1Sec')) document.getElementById('e1Sec').value = localStorage.getItem('e1Sec');
-            if(localStorage.getItem('e2Name')) document.getElementById('e2Name').value = localStorage.getItem('e2Name');
-            if(localStorage.getItem('e2Sec')) document.getElementById('e2Sec').value = localStorage.getItem('e2Sec');
-            if(localStorage.getItem('e3Name')) document.getElementById('e3Name').value = localStorage.getItem('e3Name');
-            if(localStorage.getItem('e3Sec')) document.getElementById('e3Sec').value = localStorage.getItem('e3Sec');
-            if(localStorage.getItem('e4Name')) document.getElementById('e4Name').value = localStorage.getItem('e4Name');
-            if(localStorage.getItem('e4Sec')) document.getElementById('e4Sec').value = localStorage.getItem('e4Sec');
-            
-            if(localStorage.getItem('pauseMinAmt')) document.getElementById('pauseMinAmt').value = localStorage.getItem('pauseMinAmt');
-            if(localStorage.getItem('pauseMin')) document.getElementById('pauseMin').value = localStorage.getItem('pauseMin');
-            if(localStorage.getItem('pauseSec')) document.getElementById('pauseSec').value = localStorage.getItem('pauseSec');
-            if(localStorage.getItem('timerScale')) {
-                let s = localStorage.getItem('timerScale');
-                scaleRange.value = s;
-                scaleValue.textContent = s + '倍';
-            }
-            if(localStorage.getItem('timerCustomBgPos')) {
-                bgPosSelect.value = localStorage.getItem('timerCustomBgPos');
-            }
-        }
-        if(!isObs) loadConfig();
-
-        function saveAllConfig() {
-            localStorage.setItem('e1Name', document.getElementById('e1Name').value);
-            localStorage.setItem('e1Sec', document.getElementById('e1Sec').value);
-            localStorage.setItem('e2Name', document.getElementById('e2Name').value);
-            localStorage.setItem('e2Sec', document.getElementById('e2Sec').value);
-            localStorage.setItem('e3Name', document.getElementById('e3Name').value);
-            localStorage.setItem('e3Sec', document.getElementById('e3Sec').value);
-            localStorage.setItem('e4Name', document.getElementById('e4Name').value);
-            localStorage.setItem('e4Sec', document.getElementById('e4Sec').value);
-
-            localStorage.setItem('pauseMinAmt', document.getElementById('pauseMinAmt').value);
-            localStorage.setItem('pauseMin', document.getElementById('pauseMin').value);
-            localStorage.setItem('pauseSec', document.getElementById('pauseSec').value);
-            showPopup("💾 所有設定已完美儲存！", "已儲存");
-        }
-
         let hideTimeout = null;
         function showPopup(text, plusText) {
             popMsg.textContent = text;
@@ -627,7 +230,7 @@
             }, 4000); 
         }
 
-        // 每秒背景倒數核心
+        // 自動倒數核心
         setInterval(() => {
             isRunning = localStorage.getItem('timerIsRunning') !== 'false';
             if (isRunning && timeLeft > 0) {
@@ -636,7 +239,7 @@
             }
         }, 1000);
 
-        // 跨分頁 / OBS 與控制面板同步監聽
+        // 即時監聽控制器傳來的同步指令
         window.addEventListener('storage', (e) => {
             if (e.key === 'streamTimerLeft') {
                 let val = parseInt(e.newValue);
@@ -645,43 +248,12 @@
                     updateDisplay();
                 }
             }
-            if (e.key === 'timerIsRunning') {
-                isRunning = e.newValue === 'true';
-                if (toggleBtn) {
-                    toggleBtn.textContent = isRunning ? "暫停" : "開始";
-                    toggleBtn.style.background = isRunning ? "#dc2626" : "#059669";
-                }
-            }
             if (e.key === 'timerStyle' || e.key === 'timerCustomTitle' || e.key === 'timerScale' || e.key === 'timerCustomBg' || e.key === 'timerCustomBgPos') {
                 applyAllVisuals();
             }
             if (e.key === 'timerPopupEvent') {
                 let data = JSON.parse(e.newValue);
                 showPopup(data.text, data.plus);
-            }
-        });
-
-        // 串流事件串接
-        window.addEventListener('onEventReceived', function (obj) {
-            let event = obj.detail;
-            if (!event) return;
-
-            if (event.listener === 'subscriber') {
-                let username = event.event.name;
-                let seconds = parseFloat(document.getElementById('e1Sec').value) || 600;
-                let evName = document.getElementById('e1Name').value || '訂閱';
-                timeLeft += seconds;
-                updateDisplay();
-                let popText = `💙 謝謝 【${username}】 達成【${evName}】！`;
-                let plusText = `+${seconds}s`;
-                showPopup(popText, plusText);
-                localStorage.setItem('timerPopupEvent', JSON.stringify({ text: popText, plus: plusText, time: Date.now() }));
-            }
-
-            if (event.listener === 'donation' || event.listener === 'superchat') {
-                let username = event.event.name;
-                let amount = event.event.amount;
-                handleDonation(username, amount);
             }
         });
 
